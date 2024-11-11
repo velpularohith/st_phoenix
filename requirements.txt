@@ -5,9 +5,5 @@ pylint
 astor
 streamlit-ace
 ollama
-subprocess
 astor
-re
-ast
-sqlite3
 

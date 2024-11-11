@@ -5,7 +5,6 @@ pylint
 astor
 streamlit-ace
 ollama
-tempfile
 io
 sys
 subprocess

@@ -3,6 +3,12 @@ from streamlit_ace import st_ace
 import tempfile
 import ollama
 
+import os
+
+# Set up Java environment variables
+os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-17-openjdk-amd64"
+os.environ["PATH"] += os.pathsep + os.path.join(os.environ["JAVA_HOME"], "bin")
+
 from utils import (
     run_python_code, run_sql_code, format_python_code, format_sql_code,
     optimize_python_code, optimize_code, run_cpp_code, run_java_code,

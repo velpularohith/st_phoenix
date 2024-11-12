@@ -15,7 +15,7 @@ else:
 # Test the g++ installation
 try:
     gpp_version = subprocess.check_output([gpp_command, '--version'])
-    st.write(gpp_version.decode())  # Display g++ version in Streamlit app
+    # st.write(gpp_version.decode())  # Display g++ version in Streamlit app
 except FileNotFoundError:
     st.error("g++ is not installed or accessible")
 

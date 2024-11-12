@@ -2,8 +2,23 @@ import streamlit as st
 from streamlit_ace import st_ace
 import tempfile
 import ollama
-
 import os
+import subprocess
+import platform
+
+# Platform-specific g++ command
+if platform.system() == "Windows":
+    gpp_command = "C:\\msys64\\ucrt64\\bin\\g++.exe"
+else:
+    gpp_command = "g++"  # For Linux environments like Streamlit Cloud
+
+# Test the g++ installation
+try:
+    gpp_version = subprocess.check_output([gpp_command, '--version'])
+    st.write(gpp_version.decode())  # Display g++ version in Streamlit app
+except FileNotFoundError:
+    st.error("g++ is not installed or accessible")
+
 
 # Set up Java environment variables
 os.environ["JAVA_HOME"] = "/usr/lib/jvm/java-17-openjdk-amd64"

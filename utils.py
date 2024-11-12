@@ -146,15 +146,17 @@ def run_cpp_code(code, custom_input=None):
     # Ensure the compiled output is executable
     os.chmod("temp_code.out", 0o755)  # Make the output file executable
     
-    # Run the compiled output
+    # Run the compiled output, suppressing the version info of g++
     run_result = subprocess.run(
         ["./temp_code.out"],  # Use './' to indicate it's a local executable
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
     
-    # Return the runtime output or error
-    return run_result.stdout if run_result.returncode == 0 else f"Runtime Error: {run_result.stderr}"
-
+    # Only show the runtime output if there is no error
+    if run_result.returncode == 0:
+        return run_result.stdout
+    else:
+        return f"Runtime Error: {run_result.stderr}"
 def run_java_code(code, input_data):
     # Extract the class name from the Java code
     class_match = re.search(r'class\s+(\w+)', code)

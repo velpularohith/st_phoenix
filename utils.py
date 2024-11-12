@@ -132,9 +132,9 @@ def run_cpp_code(code, custom_input=None):
     with open("temp_code.cpp", "w") as f:
         f.write(code)
     
-    # Compile the C++ code
+    # Compile the C++ code using the 'g++' command available in the system's PATH
     compile_result = subprocess.run(
-        [r"C:\msys64\ucrt64\bin\g++.exe", "temp_code.cpp", "-o", "temp_code.out"],
+        ["g++", "temp_code.cpp", "-o", "temp_code.out"],
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
     
@@ -143,9 +143,12 @@ def run_cpp_code(code, custom_input=None):
         print("Compilation Error Details:", compile_result.stderr)  # Print detailed error message
         return f"Compilation Error: {compile_result.stderr}"
     
+    # Ensure the compiled output is executable
+    os.chmod("temp_code.out", 0o755)  # Make the output file executable
+    
     # Run the compiled output
     run_result = subprocess.run(
-        ["temp_code.out"],
+        ["./temp_code.out"],  # Use './' to indicate it's a local executable
         stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
     )
     

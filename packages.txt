@@ -1,3 +1,2 @@
 openjdk-17-jdk
 g++
-ollama-python

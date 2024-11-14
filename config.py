@@ -1,0 +1,6 @@
+snowflake_user = "PHOENIX"
+snowflake_password = "Phoenix@1"
+snowflake_account = "vd41067.central-india.azure"
+snowflake_warehouse = "COMPUTE_WH"
+snowflake_database = "PHOENIX_DB"
+snowflake_schema = "PHOENIX_SC"

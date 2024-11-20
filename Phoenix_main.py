@@ -7,7 +7,8 @@ import pandas as pd
 from Phoenix_utils import (
     run_python_code, run_sql_code, format_python_code, format_sql_code,
     optimize_python_code, optimize_code, run_cpp_code, run_java_code,
-    format_cpp_code, format_java_code, optimize_cpp_code, optimize_java_code,store_feedback,store_ticket
+    format_cpp_code, format_java_code, optimize_cpp_code, optimize_java_code,
+    store_feedback,store_ticket,fetch_jira_data
 )
 
 # st.set_page_config(page_title="Coding Platform")
@@ -24,6 +25,10 @@ if 'task_description' not in st.session_state:
 
 if 'task_ac' not in st.session_state:
     st.session_state['task_ac'] = 'No task Specified'
+
+
+def go_to_editor(title):
+    st.sidebar("Editor ",title)
 
 def generate_task_title(code):
     response = ollama.chat(model='llama3.2:1b', stream=True, messages=[
@@ -47,13 +52,37 @@ def generate_task_description(code):
 
 def generate_task_ac(code):
     response = ollama.chat(model='llama3.2:1b', stream=True, messages=[
-        {"role": "user", "content": f"Provide an acceptance criteria with sample input and output without any code of the following task :\n{code}"}
+        {"role": "user", "content": f"Provide an acceptance criteria with sample input and output without any code for the following task :\n{code}"}
     ])
     description = ""
     for partial_resp in response:
         token = partial_resp["message"]["content"]
         description += token
     return description
+
+def display_jira_data(status):
+    try:
+        df = fetch_jira_data(status)
+        
+        # Check if the DataFrame is empty
+        if df.empty:
+            st.warning("No Tickets are present in this Section.")
+        else:
+            # Ensure the TITLE column exists for use in the expander title
+            if 'TITLE' not in df.columns:
+                st.error("The table must have a 'TITLE' column to use as expander headers.")
+                return
+            # Display each row as an expander, using the TITLE column as the header
+            for _, row in df.iterrows():
+                title = row['TITLE']
+                # with st.expander(f"{title}"):
+                with st.expander(f"{title}"):
+                    for column, value in row.items():
+                        st.write(f"**{column}:** {value}")
+
+
+    except Exception as e:
+        st.error(f"Error fetching data: {e}")
 
 def main_page():
     st.write("WELCOME")
@@ -71,14 +100,19 @@ def main_page():
                 st.write(st.session_state['task_description'])
                 st.write("Acceptance criteria")
                 st.write(st.session_state['task_ac'])
+                st.session_state["show_editor_button"] = True
+                store_ticket( st.session_state['task_title'],st.session_state['task_description'],st.session_state['task_ac'],'UNASSIGNED','TO DO','MEDIUM','')
 
-                store_ticket( st.session_state['task_title'],st.session_state['task_description'],st.session_state['task_ac'])
-
-        if st.button("Go to Editor"):       
-            st.session_state["current_page"] = "first"  # Change page to home
-            st.rerun()  # Trigger rerun to reload the app and navigate to the home page
         else:
             st.error("Please enter some description to generate a ticket")
+        # if st.button("Go to Editor"):       
+        #     st.session_state["current_page"] = "first"  # Change page to home
+        #     st.rerun()  # Trigger rerun to reload the app and navigate to the home page
+    if st.session_state.get("show_editor_button"):
+        if st.button("Go to Editor"):
+            st.session_state["current_page"] = "first"  # Set the current page to editor
+            st.rerun()  # Trigger rerun to navigate to the editor page
+    
 
 
     if st.button("View Tickets"):
@@ -377,6 +411,7 @@ def gen_jira_page():
             })
             df = pd.concat([df, new_task], ignore_index=True)
             st.success("Task added successfully!")
+            
 
     # Display a table of tasks as an overview
     st.subheader("Task Overview")
@@ -387,25 +422,34 @@ def gen_jira_page2():
     if st.sidebar.button("Back To Home"):
         st.session_state["current_page"] = "home"  # Change page to home
         st.rerun()  # Trigger rerun to reload the app and navigate to the home page
+
+    if st.sidebar.button("Go To Editor"):
+        st.session_state["current_page"] = "first"  # Change page to home
+        st.rerun()  # Trigger rerun to reload the app and navigate to the home page
+
     with st.sidebar.expander("Create New Task"):
         new_title = st.text_input("Task Title")
         new_assignee = st.text_input("Assignee")
-        new_status = st.selectbox("Status", options=["To Do", "In Progress", "Review", "Done"])
+        new_status = st.selectbox("Status", options=["TO DO", "DEV", "QA", "DONE"])
         new_priority = st.selectbox("Priority", options=["High", "Medium", "Low"])
         new_description = st.text_area("Description")
+        new_ac = st.text_area("Acceptance Criteria")
+        new_comments = st.text_area("Comments")
 
         if st.button("Add Task"):
             # Add new task to dataframe
-            new_task = pd.DataFrame({
-                "Ticket ID": [f"JIRA-{len(df)+1:03}"],
-                "Title": [new_title],
-                "Assignee": [new_assignee],
-                "Status": [new_status],
-                "Priority": [new_priority],
-                "Description": [new_description]
-            })
-            df = pd.concat([df, new_task], ignore_index=True)
+            # new_task = pd.DataFrame({
+            #     "Ticket ID": [f"JIRA-{len(df)+1:03}"],
+            #     "Title": [new_title],
+            #     "Assignee": [new_assignee],
+            #     "Status": [new_status],
+            #     "Priority": [new_priority],
+            #     "Description": [new_description]
+            # })
+            # df = pd.concat([df, new_task], ignore_index=True)
+            store_ticket(new_title,new_description,new_ac,new_assignee,new_status,new_priority,new_comments)
             st.success("Task added successfully!")
+            st.rerun()
                 
     col1, col2= st.columns([1,4])
     with col1:
@@ -415,18 +459,30 @@ def gen_jira_page2():
     col3,col4,col5,col6=st.columns(4)
     with col3:
         st.write("TO DO")
-        with st.expander("task_1"):
-            st.write(st.session_state['task_title'])
-            st.write("Description")
-            st.write(st.session_state['task_description'])
-            st.write("Acceptance criteria")
-            st.write(st.session_state['task_ac'])
+        display_jira_data('TO DO')
+        # with st.expander(st.session_state['task_title']):
+        #     st.write(st.session_state['task_title'])
+        #     st.write("Description")
+        #     st.write(st.session_state['task_description'])
+        #     st.write("Acceptance criteria")
+        #     st.write(st.session_state['task_ac'])
+
+        # df = fetch_jira_data()
+        # for idx, row in df.iterrows():
+        #     with st.expander(f"Row {idx + 1}"):
+        #         for column, value in row.items():
+        #             st.write(f"**{column}:** {value}")
+
+
     with col4:
         st.write("DEV")
+        display_jira_data('DEV')
     with col5:
         st.write("QA")
+        display_jira_data('QA')
     with col6:
         st.write("DONE")
+        display_jira_data('DONE')
 
 
 if st.session_state.get("current_page", "home") == "home":

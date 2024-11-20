@@ -12,6 +12,7 @@ import os
 import tempfile
 import snowflake.connector
 from config import *
+import pandas as pd
 
 conn = {
     "user"  : snowflake_user,
@@ -31,11 +32,30 @@ def store_feedback(query):
     cursor.execute(insert_query)
     cursor.close()
 
-def store_ticket(task_title,task_description,task_ac):
+def store_ticket(task_title,task_description,task_ac,task_assignee,task_status,task_priority,task_comments):
     cursor = connection.cursor()
-    insert_query = f"INSERT INTO PHOENIX_DB.PHOENIX_SC.JIRA_TICKETS(TITLE,DESCRIPTION,ACCEPTANCE_CRITERIA) VALUES ('{task_title}','{task_description}','{task_ac}');"
-    cursor.execute(insert_query)
+    # insert_query = f"INSERT INTO PHOENIX_DB.PHOENIX_SC.JIRA_TICKETS(TITLE,DESCRIPTION,ACCEPTANCE_CRITERIA) VALUES ('{task_title}','{task_description}','{task_ac}');"
+    # cursor.execute(insert_query)
+
+    insert_query = """
+        INSERT INTO PHOENIX_DB.PHOENIX_SC.JIRA_TICKETS
+        (TITLE, DESCRIPTION, ACCEPTANCE_CRITERIA,ASSIGNE,STATE,PRIORITY,COMMENTS)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+    """
+    cursor.execute(insert_query, (task_title, task_description, task_ac,task_assignee,task_status,task_priority,task_comments))
+
     cursor.close()
+
+def fetch_jira_data(j_status):
+    cursor = connection.cursor()
+    query = "SELECT * FROM PHOENIX_DB.PHOENIX_SC.JIRA_TICKETS WHERE STATE=%s;"
+    cursor.execute(query, (j_status,))
+    rows = cursor.fetchall()
+
+    # Fetch column names from the cursor
+    columns = [col[0] for col in cursor.description]
+    cursor.close()
+    return pd.DataFrame(rows, columns=columns)
     
 
 class CodeOptimizer(ast.NodeTransformer):
